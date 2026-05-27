@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {
+		"dotnet.defaultSolution": "albion_navigator_research/Albion Navigator.sln",
+		"python.defaultInterpreterPath": "c:\\Dev\\projects\\albion_get_rich\\.venv\\Scripts\\python.exe"
+	}
+}

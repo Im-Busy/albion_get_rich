@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Albion Get Rich — Market Scanner</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2234;
+            --bg-card-hover: #1e2a3f;
+            --bg-input: #0f1729;
+            --border: #2a3548;
+            --border-focus: #4ecdc4;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-orange: #ff6b35;
+            --accent-green: #39D088;
+            --accent-cyan: #4ecdc4;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --accent-yellow: #f59e0b;
+            --premium-green: #22c55e;
+            --non-premium-yellow: #eab308;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        #app { max-width: 1400px; margin: 0 auto; padding: 16px 20px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+        }
+        .header h1 { font-size: 1.4rem; color: var(--accent-orange); font-weight: 700; }
+        .header h1 small { font-size: 0.65rem; color: var(--text-muted); font-weight: 400; margin-left: 8px; }
+        .header-right { display: flex; align-items: center; gap: 12px; font-size: 0.8rem; color: var(--text-muted); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-dot.connected { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+        .status-dot.disconnected { background: var(--accent-red); }
+
+        .tabs {
+            display: flex; gap: 2px; background: var(--bg-secondary);
+            border-radius: 8px; padding: 3px; margin-bottom: 16px;
+        }
+        .tab {
+            flex: 1; padding: 10px 16px; background: none; border: none;
+            color: var(--text-muted); cursor: pointer; font-size: 0.85rem;
+            border-radius: 6px; transition: all 0.15s; font-weight: 500;
+        }
+        .tab.active { background: var(--accent-orange); color: #fff; }
+        .tab:hover:not(.active) { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .grid-2 { display: grid; grid-template-columns: 280px 1fr; gap: 16px; }
+        @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        .sidebar {
+            background: var(--bg-card); border-radius: 10px;
+            padding: 16px; border: 1px solid var(--border);
+        }
+        .sidebar h3 { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
+        input[type="text"], input[type="number"], select {
+            width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+            border-radius: 6px; background: var(--bg-input); color: var(--text-primary);
+            font-size: 0.85rem; transition: border-color 0.15s;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--border-focus); }
+
+        .checkbox-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .checkbox-group label {
+            display: flex; align-items: center; gap: 6px; cursor: pointer;
+            font-size: 0.8rem; color: var(--text-secondary);
+        }
+        .checkbox-group input[type="checkbox"] { accent-color: var(--accent-orange); }
+
+        button {
+            padding: 10px 18px; border: none; border-radius: 6px; font-size: 0.85rem;
+            cursor: pointer; transition: all 0.15s; font-weight: 600;
+        }
+        .btn-primary { background: var(--accent-orange); color: #fff; width: 100%; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-primary:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+        .btn-scan { background: var(--accent-green); color: #fff; width: 100%; }
+        .btn-scan:hover { filter: brightness(1.1); }
+        .btn-scan:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+        .btn-danger { background: var(--accent-red); color: #fff; }
+        .btn-danger:hover { filter: brightness(1.1); }
+
+        .btn-secondary { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn-secondary:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+        .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+
+        .main-panel { min-width: 0; }
+
+        .progress-container {
+            background: var(--bg-card); border-radius: 10px; padding: 16px;
+            border: 1px solid var(--border); margin-bottom: 16px; display: none;
+        }
+        .progress-container.show { display: block; }
+        .progress-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+        }
+        .progress-text { font-size: 0.85rem; color: var(--text-secondary); }
+        .progress-text strong { color: var(--accent-cyan); }
+        .progress-bar-track {
+            height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; background: linear-gradient(90deg, var(--accent-orange), var(--accent-cyan));
+            border-radius: 3px; transition: width 0.3s; width: 0%;
+        }
+        .progress-stats {
+            display: flex; gap: 20px; margin-top: 10px; font-size: 0.8rem; color: var(--text-muted);
+        }
+        .progress-stats span { color: var(--accent-green); font-weight: 600; }
+
+        .flip-table-container {
+            background: var(--bg-card); border-radius: 10px;
+            border: 1px solid var(--border); overflow: hidden;
+        }
+        .flip-table-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; border-bottom: 1px solid var(--border);
+        }
+        .flip-table-header h3 { font-size: 0.9rem; color: var(--text-primary); }
+        .flip-count { font-size: 0.8rem; color: var(--text-muted); }
+        .flip-count span { color: var(--accent-green); font-weight: 600; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        thead { background: var(--bg-secondary); }
+        th {
+            padding: 8px 12px; text-align: left; color: var(--text-muted);
+            font-weight: 600; text-transform: uppercase; font-size: 0.7rem;
+            letter-spacing: 0.5px; border-bottom: 1px solid var(--border);
+            cursor: pointer; user-select: none; white-space: nowrap;
+        }
+        th:hover { color: var(--text-secondary); }
+        th .sort-arrow { margin-left: 4px; opacity: 0.3; }
+        th.sorted .sort-arrow { opacity: 1; color: var(--accent-cyan); }
+
+        td {
+            padding: 8px 12px; border-bottom: 1px solid rgba(42,53,72,0.5);
+            white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+        }
+        tr:hover { background: var(--bg-card-hover); }
+
+        .item-name { color: var(--accent-orange); font-weight: 600; max-width: 180px; }
+        .city-name { color: var(--accent-cyan); }
+        .profit-positive { color: var(--accent-green); font-weight: 700; }
+        .profit-negative { color: var(--accent-red); }
+        .margin-badge {
+            display: inline-block; padding: 2px 6px; border-radius: 4px;
+            font-size: 0.7rem; font-weight: 600;
+        }
+        .margin-high { background: rgba(57,208,136,0.2); color: var(--accent-green); }
+        .margin-medium { background: rgba(245,158,11,0.2); color: var(--accent-yellow); }
+        .margin-low { background: rgba(100,116,139,0.2); color: var(--text-muted); }
+        .bm-badge {
+            display: inline-block; padding: 1px 5px; border-radius: 3px;
+            font-size: 0.65rem; font-weight: 700; background: rgba(139,92,246,0.2);
+            color: var(--accent-purple); letter-spacing: 0.5px;
+        }
+        .quality-badge {
+            display: inline-block; padding: 1px 5px; border-radius: 3px;
+            font-size: 0.65rem; font-weight: 600;
+        }
+        .q1 { background: rgba(100,116,139,0.2); color: #94a3b8; }
+        .q2 { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .q3 { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .q4 { background: rgba(139,92,246,0.2); color: #8b5cf6; }
+        .q5 { background: rgba(245,158,11,0.2); color: #f59e0b; }
+
+        .empty-state {
+            text-align: center; padding: 40px 20px; color: var(--text-muted);
+        }
+        .empty-state p { margin-top: 8px; font-size: 0.85rem; }
+
+        .error-message {
+            background: rgba(239,68,68,0.15); color: var(--accent-red);
+            padding: 10px 14px; border-radius: 6px; margin: 10px 0;
+            font-size: 0.85rem; display: none; border: 1px solid rgba(239,68,68,0.3);
+        }
+        .error-message.show { display: block; }
+
+        .spinner {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid var(--text-muted); border-top-color: var(--accent-cyan);
+            border-radius: 50%; animation: spin 0.6s linear infinite;
+            vertical-align: middle; margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .realtime-status {
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 16px; background: var(--bg-card); border-radius: 10px;
+            border: 1px solid var(--border); margin-bottom: 16px;
+        }
+        .realtime-status .status-indicator {
+            display: flex; align-items: center; gap: 6px; font-size: 0.85rem;
+        }
+        .cache-stats {
+            margin-left: auto; display: flex; gap: 16px;
+            font-size: 0.8rem; color: var(--text-muted);
+        }
+        .cache-stats span { color: var(--accent-cyan); font-weight: 600; }
+
+        .item-search-container { position: relative; }
+        .autocomplete-list {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 0 0 6px 6px; max-height: 250px; overflow-y: auto;
+            z-index: 1000; display: none;
+        }
+        .autocomplete-list.show { display: block; }
+        .autocomplete-item {
+            padding: 8px 12px; cursor: pointer; font-size: 0.8rem;
+            border-bottom: 1px solid rgba(42,53,72,0.3);
+        }
+        .autocomplete-item:hover { background: var(--bg-card-hover); }
+        .autocomplete-item .item-id { color: var(--text-muted); font-size: 0.7rem; margin-left: 8px; }
+
+        .item-detail-card {
+            background: var(--bg-card); border-radius: 10px;
+            border: 1px solid var(--border); padding: 20px; margin-top: 16px;
+        }
+        .item-detail-card h3 { color: var(--accent-orange); margin-bottom: 12px; font-size: 1.1rem; }
+        .price-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;
+        }
+        .price-card {
+            background: var(--bg-secondary); border-radius: 8px; padding: 12px;
+            border: 1px solid var(--border);
+        }
+        .price-card .city-name { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; display: block; }
+        .price-card .price-row {
+            display: flex; justify-content: space-between; font-size: 0.8rem; padding: 2px 0;
+        }
+        .price-card .price-label { color: var(--text-muted); }
+        .price-card .sell-price { color: var(--accent-red); }
+        .price-card .buy-price { color: var(--accent-green); }
+
+        .zone-badge {
+            font-size: 0.65rem; padding: 1px 5px; border-radius: 3px; margin-left: 6px;
+        }
+        .zone-city { background: #3498db33; color: #3498db; }
+        .zone-blue { background: #2980b933; color: #2980b9; }
+        .zone-yellow { background: #d4a01733; color: #d4a017; }
+        .zone-red { background: #e74c3c33; color: #e74c3c; }
+        .zone-black { background: #8e44ad33; color: #8e44ad; }
+        .zone-unknown { background: #44444433; color: #666; }
+
+        .route-result {
+            background: var(--bg-card); border-radius: 10px; padding: 16px;
+            border: 1px solid var(--border); margin-top: 16px; display: none;
+        }
+        .route-result.show { display: block; }
+        .result-stat {
+            display: flex; justify-content: space-between; padding: 6px 0;
+            border-bottom: 1px solid rgba(42,53,72,0.3); font-size: 0.85rem;
+        }
+        .result-stat .label { color: var(--text-muted); }
+        .result-stat .value { color: var(--accent-cyan); font-weight: 600; }
+        .breakdown-bar { height: 8px; border-radius: 4px; display: flex; overflow: hidden; margin: 8px 0; }
+        .breakdown-segment { height: 100%; }
+
+        .route-step {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid rgba(42,53,72,0.3);
+        }
+        .route-step:last-child { border-bottom: none; }
+        .step-arrow { color: var(--text-muted); }
+
+        .inline-filters {
+            display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+        }
+        .inline-filters input { width: 100px; }
+
+        .scrollable-table { max-height: 70vh; overflow-y: auto; }
+        .scrollable-table::-webkit-scrollbar { width: 6px; }
+        .scrollable-table::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        .scrollable-table::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        .scrollable-table::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h1>Albion Get Rich <small>v0.4</small></h1>
+            <div class="header-right">
+                <span><span class="status-dot disconnected" id="nats-dot"></span> NATS</span>
+                <span id="clock"></span>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="scanner">Global Scanner</button>
+            <button class="tab" data-tab="realtime">Real-Time</button>
+            <button class="tab" data-tab="navigator">Route Finder</button>
+            <button class="tab" data-tab="lookup">Item Lookup</button>
+        </div>
+
+        <!-- ═══ GLOBAL SCANNER TAB ═══ -->
+        <div id="scanner-tab" class="tab-content active">
+            <div class="grid-2">
+                <div class="sidebar">
+                    <h3>Scan Settings</h3>
+                    <div class="form-group">
+                        <label>Minimum Profit (silver)</label>
+                        <input type="number" id="gs-min-profit" value="500">
+                    </div>
+                    <div class="form-group">
+                        <label>Minimum Margin %</label>
+                        <input type="number" id="gs-min-margin" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Stale Hours</label>
+                        <input type="number" id="gs-max-stale" value="2" step="0.5">
+                    </div>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="gs-include-bm" checked> Include Black Market</label>
+                    </div>
+                    <button class="btn-scan" id="gs-start-btn">Start Global Scan</button>
+                    <div style="height:8px"></div>
+                    <button class="btn-danger btn-sm" id="gs-cancel-btn" style="width:100%;display:none;">Cancel Scan</button>
+
+                    <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+                        <h3>Last Scan</h3>
+                        <div style="font-size:0.8rem; color:var(--text-muted);" id="gs-last-scan">No scan yet</div>
+                    </div>
+                </div>
+
+                <div class="main-panel">
+                    <div class="progress-container" id="gs-progress">
+                        <div class="progress-header">
+                            <div class="progress-text">
+                                Scanning item <strong id="gs-scanned">0</strong> / <strong id="gs-total">0</strong>
+                            </div>
+                            <div class="progress-text">
+                                Flips found: <strong id="gs-flips-count">0</strong>
+                            </div>
+                        </div>
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill" id="gs-progress-bar"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <div>Batch <span id="gs-batch">0</span> / <span id="gs-total-batches">0</span></div>
+                            <div>ETA: <span id="gs-eta">--</span></div>
+                        </div>
+                    </div>
+
+                    <div class="flip-table-container" id="gs-table-container" style="display:none;">
+                        <div class="flip-table-header">
+                            <h3>Flip Opportunities</h3>
+                            <div class="flip-count">
+                                Showing <span id="gs-showing">0</span> of <span id="gs-total-flips">0</span> flips
+                            </div>
+                        </div>
+                        <div class="scrollable-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th data-sort="item_name">Item <span class="sort-arrow">&#9650;</span></th>
+                                        <th data-sort="buy_city">Buy City <span class="sort-arrow">&#9650;</span></th>
+                                        <th data-sort="buy_price">Buy Price <span class="sort-arrow">&#9650;</span></th>
+                                        <th data-sort="sell_city">Sell City <span class="sort-arrow">&#9650;</span></th>
+                                        <th data-sort="sell_price">Sell Price <span class="sort-arrow">&#9650;</span></th>
+                                        <th data-sort="profit_premium">Profit (Prem) <span class="sort-arrow">&#9650;</span></th>
+                                        <th data-sort="margin_premium">ROI % <span class="sort-arrow">&#9650;</span></th>
+                                        <th data-sort="is_black_market">BM <span class="sort-arrow">&#9650;</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gs-flip-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="empty-state" id="gs-empty">
+                        <p style="font-size:1.5rem;">&#128269;</p>
+                        <p>Click <strong>Start Global Scan</strong> to scan all 11,963 items across 7 trade hubs</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ REAL-TIME TAB ═══ -->
+        <div id="realtime-tab" class="tab-content">
+            <div class="realtime-status">
+                <div class="status-indicator">
+                    <span class="status-dot disconnected" id="rt-dot"></span>
+                    <span id="rt-status-text">Disconnected</span>
+                    <button class="btn-secondary btn-sm" id="rt-connect-btn">Connect</button>
+                </div>
+                <div class="cache-stats">
+                    Cache: <span id="rt-entries">0</span> entries |
+                    Updates: <span id="rt-updates">0</span> |
+                    Last: <span id="rt-last-update">--</span>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="sidebar">
+                    <h3>Filters</h3>
+                    <div class="form-group">
+                        <label>Minimum Profit</label>
+                        <input type="number" id="rt-min-profit" value="500">
+                    </div>
+                    <div class="form-group">
+                        <label>Minimum Margin %</label>
+                        <input type="number" id="rt-min-margin" value="5">
+                    </div>
+                    <button class="btn-secondary btn-sm" id="rt-refresh-btn">Refresh Flips</button>
+                </div>
+
+                <div class="main-panel">
+                    <div class="flip-table-container">
+                        <div class="flip-table-header">
+                            <h3>Live Flip Feed</h3>
+                            <div class="flip-count">
+                                Showing <span id="rt-showing">0</span> flips
+                            </div>
+                        </div>
+                        <div class="scrollable-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Buy City</th>
+                                        <th>Buy Price</th>
+                                        <th>Sell City</th>
+                                        <th>Sell Price</th>
+                                        <th>Profit (Prem)</th>
+                                        <th>ROI %</th>
+                                        <th>BM</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rt-flip-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="empty-state" id="rt-empty">
+                        <p style="font-size:1.5rem;">&#128225;</p>
+                        <p>Connect to NATS stream for real-time market updates</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ ROUTE FINDER TAB ═══ -->
+        <div id="navigator-tab" class="tab-content">
+            <div class="grid-2">
+                <div class="sidebar">
+                    <h3>Plan Your Route</h3>
+                    <div class="form-group" style="position:relative;">
+                        <label>Start Zone</label>
+                        <input type="text" id="start" placeholder="e.g., Thetford" autocomplete="off">
+                        <div class="autocomplete-list" id="start-list"></div>
+                    </div>
+                    <div class="form-group" style="position:relative;">
+                        <label>Destination</label>
+                        <input type="text" id="end" placeholder="e.g., Bridgewatch" autocomplete="off">
+                        <div class="autocomplete-list" id="end-list"></div>
+                    </div>
+
+                    <h3 style="margin-top:16px;">Route Preferences</h3>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="avoid-yellow"> Avoid Yellow Zones</label>
+                        <label><input type="checkbox" id="avoid-red"> Avoid Red Zones</label>
+                        <label><input type="checkbox" id="avoid-black"> Avoid Black Zones</label>
+                    </div>
+                    <button class="btn-primary" id="find-route" disabled>Find Route</button>
+                </div>
+
+                <div class="main-panel">
+                    <div class="route-result" id="route-result">
+                        <h3 style="color:var(--accent-cyan);margin-bottom:12px;">Route Details</h3>
+                        <div class="result-stat"><span class="label">Total Distance</span><span class="value" id="total-distance">-</span></div>
+                        <div class="result-stat"><span class="label">Est. Travel Time</span><span class="value" id="total-time">-</span></div>
+                        <div class="result-stat"><span class="label">Zones Traveled</span><span class="value" id="zone-count">-</span></div>
+                        <div style="margin-top:12px;">
+                            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;">Zone Breakdown</div>
+                            <div class="breakdown-bar" id="breakdown-bar"></div>
+                            <div id="breakdown-legend"></div>
+                        </div>
+                        <div style="margin-top:16px;">
+                            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">Route Steps</div>
+                            <div id="steps-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="empty-state" id="route-empty">
+                        <p style="font-size:1.5rem;">&#128506;</p>
+                        <p>Select start and destination zones to find a route</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ ITEM LOOKUP TAB ═══ -->
+        <div id="lookup-tab" class="tab-content">
+            <div style="max-width:600px;margin:0 auto;">
+                <div class="item-search-container">
+                    <input type="text" id="item-search" placeholder="Search 11,000+ items... (e.g., T6 Assassin Shoes)" autocomplete="off">
+                    <div class="autocomplete-list" id="item-search-list"></div>
+                </div>
+            </div>
+
+            <div class="item-detail-card" id="item-detail" style="display:none;">
+                <h3 id="item-detail-name">-</h3>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;" id="item-detail-id"></div>
+                <div class="price-grid" id="item-price-grid"></div>
+            </div>
+
+            <div class="empty-state" id="lookup-empty">
+                <p style="font-size:1.5rem;">&#128270;</p>
+                <p>Search for any item to see prices across all cities</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+        let zones = [];
+        let selectedStart = null;
+        let selectedEnd = null;
+
+        let gsScanEventSource = null;
+        let gsAllFlips = [];
+        let gsSortField = 'profit_premium';
+        let gsSortDir = -1;
+
+        let rtWebSocket = null;
+        let rtFlips = [];
+
+        const ZONE_COLORS = {
+            0:'#3498db',1:'#2980b9',2:'#d4a017',3:'#e74c3c',4:'#8e44ad',5:'#95a5a6',6:'#1abc9c',7:'#8e44ad'
+        };
+        const ZONE_LABELS = {
+            0:'City',1:'Blue',2:'Yellow',3:'Red',4:'Black',5:'Dungeon',6:'Portal',7:'Outlands'
+        };
+        const QUALITY_LABELS = {1:'Normal',2:'Good',3:'Outstanding',4:'Excellent',5:'Masterpiece'};
+
+        function fmt(n) { return n.toLocaleString(); }
+        function fmtSilver(n) { return fmt(n) + ' s'; }
+        function fmtPct(n) { return (n * 100).toFixed(1) + '%'; }
+        function fmtTime(s) {
+            if (s < 60) return s.toFixed(0) + 's';
+            if (s < 3600) return (s / 60).toFixed(1) + 'm';
+            return (s / 3600).toFixed(1) + 'h';
+        }
+
+        function updateClock() {
+            const el = document.getElementById('clock');
+            if (el) el.textContent = new Date().toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ── Tab Switching ──
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+            });
+        });
+
+        // ── Flip Row HTML ──
+        function flipRow(f) {
+            const qClass = 'q' + (f.quality || 1);
+            const qLabel = QUALITY_LABELS[f.quality] || 'Q' + f.quality;
+            const marginClass = f.margin_premium >= 0.1 ? 'margin-high' : f.margin_premium >= 0.05 ? 'margin-medium' : 'margin-low';
+            const enchText = f.enchantment > 0 ? ` @${f.enchantment}` : '';
+            return `<tr>
+                <td class="item-name" title="${f.item_id}${enchText}">${f.item_name}${enchText} <span class="quality-badge ${qClass}">${qLabel}</span></td>
+                <td class="city-name">${f.buy_city}</td>
+                <td>${fmt(f.buy_price)}</td>
+                <td class="city-name">${f.sell_city}</td>
+                <td>${fmt(f.sell_price)}</td>
+                <td class="profit-positive">${fmt(f.profit_premium)}</td>
+                <td><span class="margin-badge ${marginClass}">${fmtPct(f.margin_premium)}</span></td>
+                <td>${f.is_black_market ? '<span class="bm-badge">BM</span>' : ''}</td>
+            </tr>`;
+        }
+
+        function renderFlipsTable(flips, tbodyId) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = flips.map(flipRow).join('');
+        }
+
+        function sortFlips(flips, field, dir) {
+            return [...flips].sort((a, b) => {
+                let va = a[field], vb = b[field];
+                if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+                if (va < vb) return -1 * dir;
+                if (va > vb) return 1 * dir;
+                return 0;
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // GLOBAL SCANNER
+        // ═══════════════════════════════════════════════════════
+
+        document.getElementById('gs-start-btn').addEventListener('click', startGlobalScan);
+        document.getElementById('gs-cancel-btn').addEventListener('click', cancelGlobalScan);
+
+        document.querySelectorAll('#gs-table-container th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const field = th.dataset.sort;
+                if (gsSortField === field) { gsSortDir *= -1; } else { gsSortField = field; gsSortDir = -1; }
+                renderGsFlips();
+            });
+        });
+
+        function startGlobalScan() {
+            const btn = document.getElementById('gs-start-btn');
+            const cancelBtn = document.getElementById('gs-cancel-btn');
+            btn.disabled = true;
+            cancelBtn.style.display = 'block';
+
+            gsAllFlips = [];
+            const progressEl = document.getElementById('gs-progress');
+            const tableEl = document.getElementById('gs-table-container');
+            const emptyEl = document.getElementById('gs-empty');
+            progressEl.classList.add('show');
+            emptyEl.style.display = 'none';
+            tableEl.style.display = 'none';
+
+            const body = {
+                min_profit: parseInt(document.getElementById('gs-min-profit').value) || 100,
+                min_margin: (parseInt(document.getElementById('gs-min-margin').value) || 5) / 100,
+                max_stale_hours: parseFloat(document.getElementById('gs-max-stale').value) || 2,
+                include_black_market: document.getElementById('gs-include-bm').checked,
+                quality: 1,
+            };
+
+            gsScanEventSource = new EventSource('/api/market/scan/global?' + new URLSearchParams(body).toString());
+
+            const startTime = Date.now();
+
+            gsScanEventSource.addEventListener('progress', (e) => {
+                const d = JSON.parse(e.data);
+                document.getElementById('gs-scanned').textContent = d.scanned;
+                document.getElementById('gs-total').textContent = d.total;
+                document.getElementById('gs-flips-count').textContent = d.flips_found;
+                document.getElementById('gs-batch').textContent = d.batch;
+                document.getElementById('gs-total-batches').textContent = d.total_batches;
+
+                const pct = (d.scanned / d.total) * 100;
+                document.getElementById('gs-progress-bar').style.width = pct + '%';
+
+                const elapsed = (Date.now() - startTime) / 1000;
+                const rate = d.scanned / elapsed;
+                const remaining = (d.total - d.scanned) / rate;
+                document.getElementById('gs-eta').textContent = fmtTime(remaining);
+            });
+
+            gsScanEventSource.addEventListener('flips', (e) => {
+                const d = JSON.parse(e.data);
+                gsAllFlips.push(...d.flips);
+                tableEl.style.display = 'block';
+                renderGsFlips();
+            });
+
+            gsScanEventSource.addEventListener('complete', (e) => {
+                const d = JSON.parse(e.data);
+                gsAllFlips = d.flips;
+                progressEl.classList.remove('show');
+                tableEl.style.display = 'block';
+                renderGsFlips();
+                finishScan(d.total_scanned, d.total_flips, d.duration_seconds);
+            });
+
+            gsScanEventSource.addEventListener('cancelled', () => {
+                progressEl.classList.remove('show');
+                finishScan(0, gsAllFlips.length, 0);
+            });
+
+            gsScanEventSource.addEventListener('error', (e) => {
+                progressEl.classList.remove('show');
+                finishScan(0, gsAllFlips.length, 0);
+            });
+
+            gsScanEventSource.onerror = () => {
+                progressEl.classList.remove('show');
+                finishScan(0, gsAllFlips.length, 0);
+            };
+
+            function finishScan(scanned, totalFlips, duration) {
+                btn.disabled = false;
+                cancelBtn.style.display = 'none';
+                if (gsScanEventSource) { gsScanEventSource.close(); gsScanEventSource = null; }
+                document.getElementById('gs-showing').textContent = gsAllFlips.length;
+                document.getElementById('gs-total-flips').textContent = totalFlips;
+                if (gsAllFlips.length === 0) {
+                    tableEl.style.display = 'none';
+                    emptyEl.style.display = 'block';
+                    emptyEl.querySelector('p:last-child').textContent = 'No profitable flips found. Try adjusting filters.';
+                }
+                document.getElementById('gs-last-scan').innerHTML =
+                    `${totalFlips} flips found in ${fmtTime(duration)}<br>${new Date().toLocaleTimeString()}`;
+            }
+        }
+
+        function cancelGlobalScan() {
+            if (gsScanEventSource) { gsScanEventSource.close(); gsScanEventSource = null; }
+            document.getElementById('gs-progress').classList.remove('show');
+            document.getElementById('gs-start-btn').disabled = false;
+            document.getElementById('gs-cancel-btn').style.display = 'none';
+        }
+
+        function renderGsFlips() {
+            const sorted = sortFlips(gsAllFlips, gsSortField, gsSortDir);
+            renderFlipsTable(sorted, 'gs-flip-tbody');
+            document.getElementById('gs-showing').textContent = sorted.length;
+            document.getElementById('gs-total-flips').textContent = sorted.length;
+        }
+
+        // Fix: SSE with POST doesn't work directly. Use fetch + EventSource pattern.
+        // Actually let's override startGlobalScan to use fetch + SSE properly.
+        // The SSE endpoint needs to be GET with query params since EventSource only supports GET.
+
+        // Override with proper GET-based SSE
+        document.getElementById('gs-start-btn').removeEventListener('click', startGlobalScan);
+        document.getElementById('gs-start-btn').addEventListener('click', () => {
+            const btn = document.getElementById('gs-start-btn');
+            const cancelBtn = document.getElementById('gs-cancel-btn');
+            btn.disabled = true;
+            cancelBtn.style.display = 'block';
+
+            gsAllFlips = [];
+            const progressEl = document.getElementById('gs-progress');
+            const tableEl = document.getElementById('gs-table-container');
+            const emptyEl = document.getElementById('gs-empty');
+            progressEl.classList.add('show');
+            emptyEl.style.display = 'none';
+            tableEl.style.display = 'none';
+
+            const params = new URLSearchParams({
+                min_profit: parseInt(document.getElementById('gs-min-profit').value) || 100,
+                min_margin: (parseInt(document.getElementById('gs-min-margin').value) || 5) / 100,
+                max_stale_hours: parseFloat(document.getElementById('gs-max-stale').value) || 2,
+                include_black_market: document.getElementById('gs-include-bm').checked,
+                quality: 1,
+            });
+
+            const startTime = Date.now();
+            let scanJobId = null;
+
+            // Use fetch + readable stream for SSE (POST-based)
+            fetch(`${API}/market/scan/global`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    min_profit: parseInt(document.getElementById('gs-min-profit').value) || 100,
+                    min_margin: (parseInt(document.getElementById('gs-min-margin').value) || 5) / 100,
+                    max_stale_hours: parseFloat(document.getElementById('gs-max-stale').value) || 2,
+                    include_black_market: document.getElementById('gs-include-bm').checked,
+                    quality: 1,
+                }),
+            }).then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                function processChunk() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            finishScan();
+                            return;
+                        }
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        let currentEvent = null;
+                        for (const line of lines) {
+                            if (line.startsWith('event: ')) {
+                                currentEvent = line.slice(7).trim();
+                            } else if (line.startsWith('data: ') && currentEvent) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    handleSSE(currentEvent, data);
+                                } catch(e) {}
+                                currentEvent = null;
+                            }
+                        }
+
+                        processChunk();
+                    }).catch(err => {
+                        finishScan();
+                    });
+                }
+
+                processChunk();
+
+                function handleSSE(eventType, data) {
+                    scanJobId = data.job_id;
+
+                    if (eventType === 'progress') {
+                        document.getElementById('gs-scanned').textContent = data.scanned;
+                        document.getElementById('gs-total').textContent = data.total;
+                        document.getElementById('gs-flips-count').textContent = data.flips_found;
+                        document.getElementById('gs-batch').textContent = data.batch || '-';
+                        document.getElementById('gs-total-batches').textContent = data.total_batches || '-';
+                        const pct = (data.scanned / data.total) * 100;
+                        document.getElementById('gs-progress-bar').style.width = pct + '%';
+                        const elapsed = (Date.now() - startTime) / 1000;
+                        const rate = data.scanned / elapsed;
+                        const remaining = rate > 0 ? (data.total - data.scanned) / rate : 0;
+                        document.getElementById('gs-eta').textContent = fmtTime(remaining);
+                    } else if (eventType === 'flips') {
+                        gsAllFlips.push(...data.flips);
+                        tableEl.style.display = 'block';
+                        renderGsFlips();
+                    } else if (eventType === 'complete') {
+                        gsAllFlips = data.flips;
+                        progressEl.classList.remove('show');
+                        tableEl.style.display = 'block';
+                        renderGsFlips();
+                        document.getElementById('gs-showing').textContent = gsAllFlips.length;
+                        document.getElementById('gs-total-flips').textContent = data.total_flips;
+                        finishScanWith(data.total_flips, data.duration_seconds);
+                    } else if (eventType === 'cancelled') {
+                        progressEl.classList.remove('show');
+                        finishScan();
+                    } else if (eventType === 'error') {
+                        progressEl.classList.remove('show');
+                        finishScan();
+                    }
+                }
+
+                function finishScan() {
+                    btn.disabled = false;
+                    cancelBtn.style.display = 'none';
+                    if (gsAllFlips.length === 0 && !progressEl.classList.contains('show')) {
+                        tableEl.style.display = 'none';
+                        emptyEl.style.display = 'block';
+                    }
+                }
+
+                function finishScanWith(totalFlips, duration) {
+                    btn.disabled = false;
+                    cancelBtn.style.display = 'none';
+                    if (gsAllFlips.length === 0) {
+                        tableEl.style.display = 'none';
+                        emptyEl.style.display = 'block';
+                        emptyEl.querySelector('p:last-child').textContent = 'No profitable flips found. Try adjusting filters.';
+                    }
+                    document.getElementById('gs-last-scan').innerHTML =
+                        `${totalFlips} flips found in ${fmtTime(duration)}<br>${new Date().toLocaleTimeString()}`;
+                }
+            }).catch(err => {
+                btn.disabled = false;
+                cancelBtn.style.display = 'none';
+                progressEl.classList.remove('show');
+            });
+        });
+
+        // ═══════════════════════════════════════════════════════
+        // REAL-TIME (WebSocket)
+        // ═══════════════════════════════════════════════════════
+
+        document.getElementById('rt-connect-btn').addEventListener('click', toggleRealtime);
+        document.getElementById('rt-refresh-btn').addEventListener('click', refreshRtFlips);
+
+        function toggleRealtime() {
+            if (rtWebSocket && rtWebSocket.readyState === WebSocket.OPEN) {
+                rtWebSocket.close();
+            } else {
+                connectRealtime();
+            }
+        }
+
+        function connectRealtime() {
+            const dot = document.getElementById('rt-dot');
+            const text = document.getElementById('rt-status-text');
+            const btn = document.getElementById('rt-connect-btn');
+
+            dot.className = 'status-dot disconnected';
+            text.textContent = 'Connecting...';
+            btn.textContent = 'Connecting...';
+            btn.disabled = true;
+
+            rtWebSocket = new WebSocket(`ws://${location.host}/ws/flips`);
+
+            rtWebSocket.onopen = () => {
+                dot.className = 'status-dot connected';
+                text.textContent = 'Connected';
+                btn.textContent = 'Disconnect';
+                btn.disabled = false;
+                document.getElementById('nats-dot').className = 'status-dot connected';
+                document.getElementById('rt-empty').style.display = 'none';
+            };
+
+            rtWebSocket.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+
+                if (msg.type === 'connected') {
+                    updateCacheStats(msg.cache_entries, msg.cache_updates, msg.last_update);
+                } else if (msg.type === 'flips_update') {
+                    rtFlips = msg.top_flips;
+                    updateCacheStats(msg.cache_entries, msg.cache_updates);
+                    renderFlipsTable(rtFlips, 'rt-flip-tbody');
+                    document.getElementById('rt-showing').textContent = rtFlips.length;
+                } else if (msg.type === 'status') {
+                    updateCacheStats(msg.cache_entries, msg.cache_updates);
+                }
+            };
+
+            rtWebSocket.onclose = () => {
+                dot.className = 'status-dot disconnected';
+                text.textContent = 'Disconnected';
+                btn.textContent = 'Connect';
+                btn.disabled = false;
+                document.getElementById('nats-dot').className = 'status-dot disconnected';
+            };
+
+            rtWebSocket.onerror = () => {
+                dot.className = 'status-dot disconnected';
+                text.textContent = 'Error';
+                btn.textContent = 'Connect';
+                btn.disabled = false;
+            };
+        }
+
+        function updateCacheStats(entries, updates, lastUpdate) {
+            document.getElementById('rt-entries').textContent = entries || 0;
+            document.getElementById('rt-updates').textContent = updates || 0;
+            if (lastUpdate) {
+                const ago = (Date.now() / 1000) - lastUpdate;
+                document.getElementById('rt-last-update').textContent = fmtTime(ago) + ' ago';
+            }
+        }
+
+        async function refreshRtFlips() {
+            const minProfit = parseInt(document.getElementById('rt-min-profit').value) || 100;
+            const minMargin = (parseInt(document.getElementById('rt-min-margin').value) || 5) / 100;
+            try {
+                const resp = await fetch(`${API}/nats/flips?min_profit=${minProfit}&min_margin=${minMargin}&limit=100`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    rtFlips = data.flips;
+                    renderFlipsTable(rtFlips, 'rt-flip-tbody');
+                    document.getElementById('rt-showing').textContent = rtFlips.length;
+                    document.getElementById('rt-empty').style.display = 'none';
+                }
+            } catch(e) {}
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // ROUTE FINDER
+        // ═══════════════════════════════════════════════════════
+
+        function getZoneLabel(t) { return ZONE_LABELS[t] || 'Unknown'; }
+        function getZoneColor(t) { return ZONE_COLORS[t] || '#444'; }
+
+        function showAutocomplete(query, listEl, onSelect) {
+            if (!query) { listEl.classList.remove('show'); return; }
+            const matches = zones.filter(z => z.name.toLowerCase().includes(query.toLowerCase())).slice(0, 10);
+            if (matches.length === 0) { listEl.classList.remove('show'); return; }
+            listEl.innerHTML = matches.map(z =>
+                `<div class="autocomplete-item" data-id="${z.id}">${z.name} <span class="zone-badge zone-${getZoneLabel(z.zone_type).toLowerCase()}">${getZoneLabel(z.zone_type)}</span></div>`
+            ).join('');
+            listEl.classList.add('show');
+            listEl.querySelectorAll('.autocomplete-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const zone = zones.find(z => z.id === parseInt(el.dataset.id));
+                    onSelect(zone);
+                    listEl.classList.remove('show');
+                });
+            });
+        }
+
+        document.getElementById('start').addEventListener('input', (e) => {
+            showAutocomplete(e.target.value, document.getElementById('start-list'),
+                (z) => { selectedStart = z; e.target.value = z.name; checkRouteBtn(); });
+        });
+        document.getElementById('end').addEventListener('input', (e) => {
+            showAutocomplete(e.target.value, document.getElementById('end-list'),
+                (z) => { selectedEnd = z; e.target.value = z.name; checkRouteBtn(); });
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#start') && !e.target.closest('#start-list'))
+                document.getElementById('start-list').classList.remove('show');
+            if (!e.target.closest('#end') && !e.target.closest('#end-list'))
+                document.getElementById('end-list').classList.remove('show');
+        });
+
+        function checkRouteBtn() {
+            document.getElementById('find-route').disabled = !selectedStart || !selectedEnd;
+        }
+
+        document.getElementById('find-route').addEventListener('click', async () => {
+            const btn = document.getElementById('find-route');
+            btn.disabled = true;
+            try {
+                const resp = await fetch(`${API}/route`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        start: selectedStart.name, end: selectedEnd.name,
+                        avoid_yellow: document.getElementById('avoid-yellow').checked,
+                        avoid_red: document.getElementById('avoid-red').checked,
+                        avoid_black: document.getElementById('avoid-black').checked,
+                    }),
+                });
+                if (!resp.ok) throw new Error('Route not found');
+                const route = await resp.json();
+                displayRoute(route);
+            } catch(e) {
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        function displayRoute(route) {
+            document.getElementById('route-result').classList.add('show');
+            document.getElementById('route-empty').style.display = 'none';
+            document.getElementById('total-distance').textContent = route.total_km.toFixed(1) + ' km';
+            document.getElementById('total-time').textContent = route.total_minutes.toFixed(1) + ' min';
+            document.getElementById('zone-count').textContent = route.steps.length;
+
+            const bar = document.getElementById('breakdown-bar');
+            const legend = document.getElementById('breakdown-legend');
+            bar.innerHTML = ''; legend.innerHTML = '';
+
+            Object.entries(route.zone_breakdown).forEach(([name, [dist, pct]]) => {
+                const color = getZoneColor(parseInt(Object.keys(ZONE_LABELS).find(k => ZONE_LABELS[k] === name.split(' ')[0]) || 0));
+                bar.innerHTML += `<div class="breakdown-segment" style="width:${pct}%;background:${color}"></div>`;
+                legend.innerHTML += `<div class="result-stat" style="font-size:0.8rem;"><span><span style="color:${color}">●</span> ${name}</span><span>${pct.toFixed(1)}%</span></div>`;
+            });
+
+            document.getElementById('steps-list').innerHTML = route.steps.map((step, i) =>
+                `<div class="route-step">
+                    <span style="color:var(--text-muted);min-width:24px;">${i+1}.</span>
+                    <span>${step.from_zone}</span>
+                    <span class="step-arrow">→</span>
+                    <span>${step.to_zone}</span>
+                    <span class="zone-badge zone-${getZoneLabel(step.zone_type).toLowerCase()}">${getZoneLabel(step.zone_type)}</span>
+                    <span style="margin-left:auto;color:var(--text-muted);">${(step.distance/1000).toFixed(1)}km</span>
+                </div>`
+            ).join('');
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // ITEM LOOKUP
+        // ═══════════════════════════════════════════════════════
+
+        let searchTimeout = null;
+        document.getElementById('item-search').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const q = e.target.value.trim();
+            if (q.length < 2) {
+                document.getElementById('item-search-list').classList.remove('show');
+                return;
+            }
+            searchTimeout = setTimeout(() => searchItems(q), 300);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#item-search') && !e.target.closest('#item-search-list'))
+                document.getElementById('item-search-list').classList.remove('show');
+        });
+
+        async function searchItems(q) {
+            try {
+                const resp = await fetch(`${API}/market/items/search?q=${encodeURIComponent(q)}&limit=15`);
+                if (!resp.ok) return;
+                const data = await resp.json();
+                const list = document.getElementById('item-search-list');
+                if (data.items.length === 0) { list.classList.remove('show'); return; }
+                list.innerHTML = data.items.map(item =>
+                    `<div class="autocomplete-item" data-id="${item.item_id}">${item.name}<span class="item-id">${item.item_id}</span></div>`
+                ).join('');
+                list.classList.add('show');
+                list.querySelectorAll('.autocomplete-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        document.getElementById('item-search').value = el.textContent.trim().split('\n')[0].trim();
+                        list.classList.remove('show');
+                        loadItemDetail(el.dataset.id);
+                    });
+                });
+            } catch(e) {}
+        }
+
+        async function loadItemDetail(itemId) {
+            document.getElementById('lookup-empty').style.display = 'none';
+            document.getElementById('item-detail').style.display = 'block';
+            document.getElementById('item-detail-name').textContent = 'Loading...';
+            document.getElementById('item-detail-id').textContent = itemId;
+            document.getElementById('item-price-grid').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);">Fetching prices...</div>';
+
+            try {
+                const resp = await fetch(`${API}/market/scan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        items: [itemId],
+                        quality: null,
+                        min_profit: 0,
+                        min_margin: 0,
+                        include_black_market: true,
+                        limit: 100,
+                    }),
+                });
+
+                if (!resp.ok) throw new Error('Failed');
+                const data = await resp.json();
+
+                const name = data.flips.length > 0 ? data.flips[0].item_name : itemId;
+                document.getElementById('item-detail-name').textContent = name;
+
+                const grid = document.getElementById('item-price-grid');
+                if (data.flips.length === 0) {
+                    grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);">No price data available</div>';
+                    return;
+                }
+
+                // Group by city
+                const byCity = {};
+                data.flips.forEach(f => {
+                    [f.buy_city, f.sell_city].forEach(city => {
+                        if (!byCity[city]) byCity[city] = { sell: null, buy: null };
+                    });
+                    if (f.buy_city && f.buy_price) byCity[f.buy_city].sell = f.buy_price;
+                    if (f.sell_city && f.sell_price) byCity[f.sell_city].buy = f.sell_price;
+                });
+
+                grid.innerHTML = Object.entries(byCity).map(([city, prices]) => {
+                    const isBM = city === 'Black Market';
+                    return `<div class="price-card">
+                        <span class="city-name">${city}${isBM ? ' <span class="bm-badge">BM</span>' : ''}</span>
+                        <div class="price-row"><span class="price-label">Sell at:</span><span class="sell-price">${prices.sell ? fmt(prices.sell) : '-'}</span></div>
+                        <div class="price-row"><span class="price-label">Buy at:</span><span class="buy-price">${prices.buy ? fmt(prices.buy) : '-'}</span></div>
+                    </div>`;
+                }).join('');
+            } catch(e) {
+                document.getElementById('item-price-grid').innerHTML =
+                    '<div style="padding:20px;text-align:center;color:var(--accent-red);">Failed to load prices</div>';
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // INIT
+        // ═══════════════════════════════════════════════════════
+
+        async function init() {
+            try {
+                const resp = await fetch(`${API}/zones`);
+                zones = await resp.json();
+            } catch(e) { console.error('Failed to load zones:', e); }
+
+            // Check NATS status
+            try {
+                const resp = await fetch(`${API}/nats/status`);
+                const status = await resp.json();
+                const dot = document.getElementById('nats-dot');
+                dot.className = status.connected ? 'status-dot connected' : 'status-dot disconnected';
+
+                const rtDot = document.getElementById('rt-dot');
+                const rtText = document.getElementById('rt-status-text');
+                rtDot.className = status.connected ? 'status-dot connected' : 'status-dot disconnected';
+                rtText.textContent = status.connected ? 'Available' : 'Disconnected';
+
+                updateCacheStats(status.cache_entries, status.cache_updates, status.last_update);
+            } catch(e) {}
+        }
+
+        init();
+    </script>
+</body>
+</html>

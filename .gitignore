@@ -1,0 +1,56 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Large binary files >10MB
+other_useful_resources/
+albion_map.png
+albion_map_full.png
+albion_map_initial.png
+albion_toolkit_no_map.png
+map_initial.png
+extracted_maps/
+extracted_config.json
+extracted_map_config.json
+albionmaps_br_downloads/
+albionmaps_homepage.png
+albiononline2d_cloudflare.png
+albiononline2d_downloads/
+avalon_roads_downloads/
+downloaded_files/
+seleniumbase_result.html
+mvp_results.json
+data/items.json
+
+# Large markdown/reference files in repos/
+repos/albion-profit.md
+repos/AlbionCraftCalculator.md
+repos/AlbionTradeBot.md
+repos/albion-market-analysis-v2.md
+repos/AlbionFlipper.md
+repos/albionCalculator.md
+repos/AlbionOnlineMarketData.md
+repos/Albion-Online-Gold-Trade-Bot.md
+
+# Cached data
+.cf_cache/
+.market_cache/
+.playwright-mcp/
+
+# Embedded git repos (submodules)
+albion_navigator_research/
+cool_repos/
+external-repos/
+repos/Albion-Online-Market-Scanner-LiveFlipper/
+repos/Albion-Online-OpenRadar/
+repos/Albion-Online-Road-Script/
+repos/AlbionOnline-StatisticsAnalysis/
+repos/albion-arbitrage-tracker/
+repos/albionkit/
