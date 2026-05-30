@@ -54,3 +54,26 @@ repos/Albion-Online-Road-Script/
 repos/AlbionOnline-StatisticsAnalysis/
 repos/albion-arbitrage-tracker/
 repos/albionkit/
+
+# ===== PUBLIC REPO EXCLUSIONS (public branch only) =====
+# These files/directories are tracked on main, stripped on public by repo-syncer agent.
+
+# IDE and workspace files
+/.vscode/
+/albion_get_rich.code-workspace
+
+# Duplicate of shared skill (already in C:\Dev\skills\cli-tools)
+/CLI_TOOLS_GUIDE.md
+
+# Test files (contain hardcoded credentials)
+/test_nats.py
+/test_cf_bypass.py
+/test_engine.py
+
+# Kilo npm artifacts (package-lock.json was committed before .gitignore)
+/.kilo/package-lock.json
+/.kilo/package.json
+/.kilo/bun.lock
+/.kilo/node_modules/
+/.kilo/agent-manager.json
+/.kilo/worktrees/

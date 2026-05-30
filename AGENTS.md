@@ -114,3 +114,26 @@ First successful bypass caches the session for subsequent fast access. NEVER ski
 ## Asking for User Help
 
 If you encounter something you cannot accomplish—such as accessing credentials, logging into external services, performing manual approvals, obtaining information behind authentication, or any action requiring human intervention—**explicitly ask the user for help**. Do not silently fail or work around limitations without notifying the user.
+
+## Repository Architecture — Dual-Repo (Private → Public)
+
+This project uses a **dual-remote** Git architecture to publish a curated subset to a public mirror while keeping private files secure.
+
+| Remote | Branch | Purpose |
+|--------|--------|---------|
+| `origin` (private) | `main` | All files: source, tests, internal tools, IDE configs |
+| `public` (public) | `public` | Curated files only: source code, docs, plans, skills |
+
+### Sync Workflow
+
+| Agent | File | Purpose |
+|-------|------|---------|
+| **repo-syncer** | `.kilo/agent/repo-syncer.md` | Merges main→public, runs safety checks, strips private data, pushes only the clean public branch |
+
+### Slash Commands
+
+| Command | Usage |
+|---------|-------|
+| `/repo-sync` | Full sync: merge main → public → push |
+| `/repo-sync check` | Safety check only — verify no private files on public branch |
+| `/repo-sync status` | Show current branch state and remote config |
